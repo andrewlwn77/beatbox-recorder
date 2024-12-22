@@ -1,6 +1,5 @@
 import { Beatbox, Mode } from '../src';
 import fs from 'fs/promises';
-import path from 'path';
 
 describe('Beatbox', () => {
   const testStorageFile = 'test-storage.json';
@@ -9,7 +8,7 @@ describe('Beatbox', () => {
   // Test functions
   const syncAdd = (a: number, b: number): number => a + b;
   const asyncAdd = async (a: number, b: number): Promise<number> => {
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
     return a + b;
   };
 
@@ -18,7 +17,7 @@ describe('Beatbox', () => {
   };
 
   const asyncError = async (): Promise<never> => {
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
     throw new Error('Async error');
   };
 
@@ -68,7 +67,7 @@ describe('Beatbox', () => {
         expect(result).toBe(5);
 
         // Wait for async storage
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         // Verify storage
         const storage = JSON.parse(await fs.readFile(testStorageFile, 'utf-8'));
@@ -80,7 +79,7 @@ describe('Beatbox', () => {
         expect(() => wrapped()).toThrow('Sync error');
 
         // Wait for async storage
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         // Verify storage file doesn't exist or is empty
         try {
@@ -101,7 +100,7 @@ describe('Beatbox', () => {
         beatbox.setMode(Mode.RECORD);
         const wrapped = beatbox.wrap(syncAdd);
         wrapped(2, 3);
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
         beatbox.setMode(Mode.PLAYBACK);
       });
 
@@ -196,22 +195,22 @@ describe('Beatbox', () => {
 
       beatbox.setMode(Mode.RECORD);
       expect(wrapped()).toBe(0);
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       beatbox.setMode(Mode.PLAYBACK);
       expect(wrapped()).toBe(0);
     });
 
     test('should handle object arguments', async () => {
-      const fn = (obj: {x: number, y: number}) => obj.x + obj.y;
+      const fn = (obj: { x: number; y: number }) => obj.x + obj.y;
       const wrapped = beatbox.wrap(fn);
 
       beatbox.setMode(Mode.RECORD);
-      expect(wrapped({x: 1, y: 2})).toBe(3);
-      await new Promise(resolve => setTimeout(resolve, 100));
+      expect(wrapped({ x: 1, y: 2 })).toBe(3);
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       beatbox.setMode(Mode.PLAYBACK);
-      expect(wrapped({x: 1, y: 2})).toBe(3);
+      expect(wrapped({ x: 1, y: 2 })).toBe(3);
     });
 
     test('should handle array arguments', async () => {
@@ -220,7 +219,7 @@ describe('Beatbox', () => {
 
       beatbox.setMode(Mode.RECORD);
       expect(wrapped([1, 2, 3])).toBe(6);
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       beatbox.setMode(Mode.PLAYBACK);
       expect(wrapped([1, 2, 3])).toBe(6);
@@ -240,7 +239,7 @@ describe('Beatbox', () => {
       beatbox.setMode(Mode.RECORD);
       const result = wrapped();
       expect(result.set instanceof Set).toBe(true);
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // In PLAYBACK mode, it should throw since the data wasn't recorded
       beatbox.setMode(Mode.PLAYBACK);
@@ -265,7 +264,7 @@ describe('Beatbox', () => {
     test('should handle corrupted storage file', async () => {
       // Write corrupted JSON
       await fs.writeFile(testStorageFile, 'corrupted json');
-      
+
       const wrapped = beatbox.wrap(syncAdd);
       beatbox.setMode(Mode.PLAYBACK);
       expect(() => wrapped(1, 2)).toThrow();
@@ -284,7 +283,7 @@ describe('Beatbox', () => {
       wrapped1(1, 2);
       wrapped2(3, 4);
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       beatbox1.setMode(Mode.PLAYBACK);
       beatbox2.setMode(Mode.PLAYBACK);

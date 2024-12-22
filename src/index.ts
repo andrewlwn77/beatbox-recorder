@@ -1,10 +1,11 @@
 import fs from 'fs/promises';
 import crypto from 'crypto';
+import { readFileSync, renameSync } from 'fs';
 
 export enum Mode {
   BYPASS = 'BYPASS',
   RECORD = 'RECORD',
-  PLAYBACK = 'PLAYBACK'
+  PLAYBACK = 'PLAYBACK',
 }
 
 interface StorageData {
@@ -21,9 +22,9 @@ export class Beatbox {
   private storage: StorageData = {};
   private storageFile: string;
   private mode: Mode = Mode.BYPASS;
-  private initialized: boolean = false;
+  private initialized = false;
 
-  constructor(storageFile: string = 'beatbox-storage.json') {
+  constructor(storageFile = 'beatbox-storage.json') {
     this.storageFile = storageFile;
   }
 
@@ -40,32 +41,32 @@ export class Beatbox {
     if (value instanceof Set) {
       return {
         __type: 'Set',
-        value: Array.from(value)
+        value: Array.from(value),
       };
     }
     if (value instanceof Map) {
       return {
         __type: 'Map',
-        value: Array.from(value.entries())
+        value: Array.from(value.entries()),
       };
     }
     if (value instanceof Date) {
       return {
         __type: 'Date',
-        value: value.toISOString()
+        value: value.toISOString(),
       };
     }
     if (typeof value === 'function') {
       return {
         __type: 'Function',
-        name: value.name || 'anonymous'
+        name: value.name || 'anonymous',
       };
     }
     if (value instanceof RegExp) {
       return {
         __type: 'RegExp',
         source: value.source,
-        flags: value.flags
+        flags: value.flags,
       };
     }
     if (value instanceof Error) {
@@ -73,13 +74,13 @@ export class Beatbox {
         __type: 'Error',
         name: value.name,
         message: value.message,
-        stack: value.stack
+        stack: value.stack,
       };
     }
     if (value instanceof Promise) {
       return {
         __type: 'Promise',
-        status: 'pending'
+        status: 'pending',
       };
     }
     // Handle circular references
@@ -104,13 +105,14 @@ export class Beatbox {
           return new Date(value.value);
         case 'RegExp':
           return new RegExp(value.source, value.flags);
-        case 'Error':
+        case 'Error': {
           const error = new Error(value.message);
           error.name = value.name;
           error.stack = value.stack;
           return error;
+        }
         case 'Function':
-          return function() { 
+          return function () {
             throw new Error(`Cannot execute restored function '${value.name}'`);
           };
         case 'Promise':
@@ -129,9 +131,9 @@ export class Beatbox {
       JSON.parse(serialized, this.safeJsonReviver);
       return { success: true, data: serialized };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown serialization error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown serialization error',
       };
     }
   }
@@ -166,7 +168,7 @@ export class Beatbox {
       console.warn(`Failed to save storage: ${error}`);
       return;
     }
-    
+
     try {
       const tempFile = `${this.storageFile}.tmp`;
       await fs.writeFile(tempFile, data!);
@@ -182,9 +184,9 @@ export class Beatbox {
       const hash = this.generateHash(args);
 
       switch (this.mode) {
-        case Mode.BYPASS:
+        case Mode.BYPASS: {
           return fn(...args);
-
+        }
         case Mode.RECORD: {
           const result = await fn(...args);
           const { success } = await this.trySerialize(result);
@@ -197,14 +199,17 @@ export class Beatbox {
           return result;
         }
 
-        case Mode.PLAYBACK:
+        case Mode.PLAYBACK: {
           if (hash in this.storage) {
             return this.storage[hash];
           }
-          throw new Error(`No recorded result found for arguments: ${JSON.stringify(args, null, 2)}`);
-
-        default:
+          throw new Error(
+            `No recorded result found for arguments: ${JSON.stringify(args, null, 2)}`,
+          );
+        }
+        default: {
           throw new Error(`Invalid mode: ${this.mode}`);
+        }
       }
     };
 
@@ -213,28 +218,30 @@ export class Beatbox {
       const hash = this.generateHash(args);
 
       switch (this.mode) {
-        case Mode.BYPASS:
+        case Mode.BYPASS: {
           return fn(...args);
-
+        }
         case Mode.RECORD: {
           const result = fn(...args);
           // Save asynchronously without blocking
-          this.loadStorage().then(async () => {
-            const { success } = await this.trySerialize(result);
-            if (success) {
-              this.storage[hash] = result;
-              await this.saveStorage();
-            } else {
-              console.warn('Failed to record non-serializable result');
-            }
-          }).catch(console.error);
+          this.loadStorage()
+            .then(async () => {
+              const { success } = await this.trySerialize(result);
+              if (success) {
+                this.storage[hash] = result;
+                await this.saveStorage();
+              } else {
+                console.warn('Failed to record non-serializable result');
+              }
+            })
+            .catch(console.error);
           return result;
         }
 
-        case Mode.PLAYBACK:
+        case Mode.PLAYBACK: {
           // Initialize storage synchronously for playback
           try {
-            const data = require('fs').readFileSync(this.storageFile, 'utf-8');
+            const data = readFileSync(this.storageFile, 'utf-8');
             this.storage = JSON.parse(data, this.safeJsonReviver);
             this.initialized = true;
           } catch (error) {
@@ -244,20 +251,25 @@ export class Beatbox {
             } else if (error instanceof SyntaxError) {
               // Handle corrupted storage file
               const backup = `${this.storageFile}.backup.${Date.now()}`;
-              require('fs').renameSync(this.storageFile, backup);
+              renameSync(this.storageFile, backup);
               this.storage = {};
               this.initialized = true;
-              console.warn(`Storage file was corrupted. Backed up to ${backup} and created new storage.`);
+              console.warn(
+                `Storage file was corrupted. Backed up to ${backup} and created new storage.`,
+              );
             }
           }
-          
+
           if (!(hash in this.storage)) {
-            throw new Error(`No recorded result found for arguments: ${JSON.stringify(args, null, 2)}`);
+            throw new Error(
+              `No recorded result found for arguments: ${JSON.stringify(args, null, 2)}`,
+            );
           }
           return this.storage[hash];
-
-        default:
+        }
+        default: {
           throw new Error(`Invalid mode: ${this.mode}`);
+        }
       }
     };
 
