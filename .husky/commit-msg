@@ -1,0 +1,16 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo '🏗️👷 Styling, the commit message'
+
+npx --no -- commitlint --edit "$1" || (
+    echo "❌ Commit message validation failed."
+    echo "Please follow the conventional commit format:"
+    echo "type(scope?): description"
+    echo ""
+    echo "Examples:"
+    echo "  feat: add new feature"
+    echo "  fix(auth): resolve login issue"
+    echo "  docs: update README"
+    exit 1
+)
