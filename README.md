@@ -1,7 +1,7 @@
 # Beatbox
 
 <p align="center">
-  <img src="docs/assets/beatbox.png" alt="Beatbox Logo" width="400"/>
+  <img src="https://raw.githubusercontent.com/andrewlwn77/beatbox-recorder/main/docs/assets/beatbox.png" alt="Beatbox Logo" width="400"/>
 </p>
 
 Beatbox is a lightweight TypeScript library that records and replays function calls, making it perfect for testing, mocking, and debugging. It can capture the results of expensive operations, API calls, or complex computations and play them back instantly, significantly speeding up tests and development cycles.
